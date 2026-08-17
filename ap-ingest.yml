@@ -2,7 +2,7 @@ name: AP Ingest
 
 on:
   schedule:
-    - cron: '0 13 * * 1-5'  # 8:00 AM Central (UTC-5 standard / UTC-6 daylight — adjust seasonally). Weekdays only.
+    - cron: '0 10 * * 1-5'  # 8:00 AM Central (UTC-5 standard / UTC-6 daylight — adjust seasonally). Weekdays only.
   workflow_dispatch:         # allow manual runs from the GitHub Actions UI
 
 jobs:
