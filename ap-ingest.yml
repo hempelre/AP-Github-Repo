@@ -1,0 +1,53 @@
+name: AP Ingest
+
+on:
+  schedule:
+    - cron: '0 13 * * 1-5'  # 8:00 AM Central (UTC-5 standard / UTC-6 daylight — adjust seasonally). Weekdays only.
+  workflow_dispatch:         # allow manual runs from the GitHub Actions UI
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install ODBC Driver for SQL Server
+        run: |
+          curl -sSL https://packages.microsoft.com/keys/microsoft.asc | sudo gpg --batch --yes --dearmor -o /usr/share/keyrings/microsoft-prod.gpg
+          echo "deb [arch=amd64 signed-by=/usr/share/keyrings/microsoft-prod.gpg] https://packages.microsoft.com/ubuntu/22.04/prod jammy main" | sudo tee /etc/apt/sources.list.d/mssql-release.list
+          sudo apt-get update
+          sudo ACCEPT_EULA=Y apt-get install -y msodbcsql18 unixodbc-dev
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run AP ingest
+        env:
+          AUTH_METHOD: client_secret
+          GRAPH_TENANT_ID: ${{ secrets.GRAPH_TENANT_ID }}
+          GRAPH_CLIENT_ID: ${{ secrets.GRAPH_CLIENT_ID }}
+          GRAPH_CLIENT_SECRET: ${{ secrets.GRAPH_CLIENT_SECRET }}
+          SHARED_MAILBOX: ${{ secrets.SHARED_MAILBOX }}
+          SQL_CONN_STR: ${{ secrets.SQL_CONN_STR }}
+          SOURCE_FOLDER: 'AP Vendor Aging'
+          DEST_FOLDER: 'Old AP Vendor Aging'
+          DO_INGEST: 'true'
+          DO_MOVE: 'true'
+          TEST_MODE: 'false'
+        run: python ap_ingest.py
+
+      - name: Upload run log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ap-ingest-failure-log
+          path: '*.csv'
+          if-no-files-found: ignore
