@@ -2,12 +2,17 @@ name: AP Ingest
 
 on:
   schedule:
-    - cron: '0 10 * * 1-5'  # 8:00 AM Central (UTC-5 standard / UTC-6 daylight — adjust seasonally). Weekdays only.
-  workflow_dispatch:         # allow manual runs from the GitHub Actions UI
+    - cron: '0 10 * * 1-5'   # temporary backup; delete once the VM-triggered run is confirmed
+  workflow_dispatch:         # triggered weekdays at 6:30 AM Central by hempel-jobs-vm
+
+concurrency:
+  group: ap-ingest
+  cancel-in-progress: false
 
 jobs:
   ingest:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
       - name: Checkout
